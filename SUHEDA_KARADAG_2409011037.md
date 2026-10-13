@@ -1,11 +1,11 @@
 # Team Member Contribution
 
-- **Full name:** Şüheda Karadağ
+- **Full name:** Şuheda Karadağ
 - **10-digit student ID:** 2409011037
 - **GitHub username:@suhedyyyy
 
 ## Work completed
-Code control , preparing a powerpoint presentation
+Code control and development , preparing a powerpoint presentation , GitHub and project files 
 
 ## Files or functions contributed to
 - `main.py`:
