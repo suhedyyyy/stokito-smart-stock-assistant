@@ -1,249 +1,202 @@
-"""
-Chaos Calculator
-Calculates separate social and academic chaos scores from 10 questions.
-Social life: 6 questions, maximum 60 points.
-Academic life: 4 questions, maximum 40 points.
-Overall chaos: maximum 100 points.
-"""
+products = {}
+daily_revenue = 0
 
 
-def ask_number(prompt):
-	"""Return a non-negative integer, repeating the question for invalid input."""
-	while True:
-		raw = input(prompt).strip()
-		try:
-			value = int(raw)
-			if value < 0:
-				print("Please enter 0 or a positive whole number.")
-				continue
-			return value
-		except ValueError:
-			print("Invalid input. Please enter a whole number, such as 2.")
 
 
-def ask_yes_no(prompt):
-	"""Return 'yes' or 'no'; accept answers regardless of case and whitespace."""
-	while True:
-		answer = input(prompt).strip().lower()
-		if answer in ("yes", "y"):
-			return "yes"
-		elif answer in ("no", "n"):
-			return "no"
-		else:
-			print("Please answer yes or no.")
+def add_item():
+    print("\n--- ADD A NEW ITEM ---")
+
+    name = input("Item name: ").strip().title()
+
+    if not name or name in products:
+        print("Invalid name or item already exists!")
+        return
+
+    try:
+        stock = int(input("Current stock quantity: "))
+        selling_price = float(input("Selling price per unit (TL): "))
+        purchase_price = float(input("Purchase cost per unit (TL): "))
+        limit = int(input("Low-stock warning limit: "))
+        target = int(input("Target stock quantity: "))
+
+        if stock < 0 or selling_price < 0 or purchase_price < 0 or limit < 0:
+            print("Negative values are not allowed!")
+            return
+
+        if target < stock:
+            print("Target stock cannot be lower than current stock!")
+            return
+
+        products[name] = {
+            "stock": stock,
+            "selling_price": selling_price,
+            "purchase_price": purchase_price,
+            "limit": limit,
+            "target": target }
+
+        print(f"{name} added successfully!")
+
+    except ValueError:
+        print("Invalid input! Please enter numeric values.")
 
 
-def score_frequency(value, medium_limit, low_score=0, medium_score=5, high_score=10):
-	"""Score a numeric answer using the shared frequency rule."""
-	if value == 0:
-		return low_score
-	elif value <= medium_limit:
-		return medium_score
-	else:
-		return high_score
+def sell_items():
+    global daily_revenue
+
+    if not products:
+        print("Please add an item first!")
+        return
+
+    print("\n--- SELL AN ITEM ---")
+
+    for name, product in products.items():
+        print(f"{name} | Stock: {product['stock']} units")
+
+    name = input("Item name: ").strip().title()
+
+    if name not in products:
+        print("Item not found!")
+        return
+
+    try:
+        quantity = int(input("Quantity sold: "))
+
+        if quantity <= 0:
+            print("Quantity must be at least 1!")
+            return
+
+        product = products[name]
+
+        if quantity > product["stock"]:
+            print(f"Insufficient stock! Available: {product['stock']}")
+            return
+
+        revenue = quantity * product["selling_price"]
+        product["stock"] -= quantity
+        daily_revenue += revenue
+
+        print("\nSALE COMPLETED!")
+        print(f"Product: {name}")
+        print(f"Sale revenue: {revenue:.2f} TL")
+        print(f"Remaining stock: {product['stock']} units")
+
+        if product["stock"] <= product["limit"]:
+            print("WARNING: Stock level is low!")
+
+    except ValueError:
+        print("Please enter a valid quantity!")
 
 
-def score_yes_no(answer):
-	"""Give 10 points for yes and 0 points for no."""
-	if answer == "yes":
-		return 10
-	else:
-		return 0
+def restock_item():
+    if not products:
+        print("Please add an item first!")
+        return
+
+    print("\n--- RESTOCK AN ITEM ---")
+
+    for name, product in products.items():
+        print(f"{name} | Current stock: {product['stock']} units")
+
+    name = input("Item name to restock: ").strip().title()
+
+    if name not in products:
+        print("Item not found!")
+        return
+
+    try:
+        quantity = int(input("Quantity purchased: "))
+
+        if quantity <= 0:
+            print("Quantity must be at least 1!")
+            return
+
+        product = products[name]
+        cost = quantity * product["purchase_price"]
+
+        product["stock"] += quantity
+
+        print("\nSTOCK UPDATED SUCCESSFULLY!")
+        print(f"Product: {name}")
+        print(f"Quantity added: {quantity} units")
+        print(f"New stock level: {product['stock']} units")
+        print(f"Purchase cost: {cost:.2f} TL")
+
+        if product["stock"] <= product["limit"]:
+            print("WARNING: Stock is still low!")
+        else:
+            print("Stock level is sufficient.")
+
+    except ValueError:
+        print("Please enter a valid quantity!")
 
 
-def ask_social_questions():
-	"""Ask six social-life questions and return the total score out of 60."""
-	print("\n---- SOCIAL LIFE QUESTIONS ----")
-	total = 0
+def show_reports():
+    print("\n--- DAILY REPORT ---")
+    print(f"Total daily revenue: {daily_revenue:.2f} TL")
 
-	# First social question
-	ans1 = ask_number(
-		"1. How many classes have you missed or been late to since school started? "
-	)
+    if not products:
+        print("No items registered.")
+        return
 
-	if ans1 == 0:
-		point = 0
-	elif ans1 == 1:
-		point = 2
-	elif ans1 == 2:
-		point = 4
-	elif ans1 == 3:
-		point = 6
-	else:
-		point = 10
+    total_restock_cost = 0
 
-	total += point
+    print("\n--- STOCK AND RESTOCKING REPORT ---")
 
-	# Second social question
-	ans2 = ask_number(
-		"2. How many times have you had problems on public transportation "
-		"in the last month (fight, argument, etc.)? "
-	)
-	total += score_frequency(ans2, 3)
+    for name, product in products.items():
+        needed = max(0, product["target"] - product["stock"])
+        cost = needed * product["purchase_price"]
+        total_restock_cost += cost
 
-	# Third social question
-	ans3 = ask_number(
-		"3. How many hours did you spend in traffic during the past week? "
-	)
-	total += score_frequency(ans3, 2)
+        print(f"\nProduct: {name}")
+        print(f"Current stock: {product['stock']} units")
 
-	# Fourth social question
-	ans4 = ask_number(
-		"4. How many plans did you join and then immediately regret joining? "
-	)
-	total += score_frequency(ans4, 3)
+        if product["stock"] <= product["limit"]:
+            print("Status: LOW STOCK WARNING!")
+        else:
+            print("Status: Normal")
 
-	# Fifth social question
-	ans5 = ask_yes_no(
-		"5. Have you ever gone somewhere for one reason and completely "
-		"forgotten why? (yes/no): "
-	)
-	total += score_yes_no(ans5)
+        print(f"Quantity to order: {needed} units")
+        print(f"Purchase price per unit: {product['purchase_price']:.2f} TL")
+        print(f"Restocking cost: {cost:.2f} TL")
 
-	# Sixth social question
-	ans6 = ask_number(
-		"6. Since school started, how many days have you asked yourself, "
-		"'How much worse can things possibly get?' "
-	)
-
-	if ans6 == 0:
-		point = 0
-	elif ans6 == 1:
-		point = 2
-	elif ans6 == 2:
-		point = 4
-	elif ans6 == 3:
-		point = 6
-	else:
-		point = 10
-
-	total += point
-
-	return total
+    print(f"\nTotal restocking cost: {total_restock_cost:.2f} TL")
 
 
-def ask_academic_questions():
-	"""Ask four academic-life questions and return the total score out of 40."""
-	print("\n---- ACADEMIC LIFE QUESTIONS ----")
-	total = 0
+while True:
+    print("\n" + "=" * 44)
+    print("    STOKITO - SMART STOCK ASSISTANT")
+    print("=" * 44)
+    print("1 - Add a new item")
+    print("2 - Sell an item")
+    print("3 - View daily revenue and stock reports")
+    print("4 - List all registered items")
+    print("5 - Restock an existing item")
+    print("0 - Exit")
+    print("=" * 44)
 
-	# First academic question
-	ans1 = ask_yes_no(
-		"1. Have you been partying since school started? (yes/no): "
-	)
-	total += score_yes_no(ans1)
+    choice = input("\nWhat would you like to do? ").strip()
 
-	# Second academic question
-	ans2 = ask_number("2. How many times have you forgotten a deadline? ")
-	total += score_frequency(ans2, 2)
-
-	# Third academic question
-	ans3 = ask_yes_no(
-		"3. Have you ever arrived at an exam without studying at all? "
-		"(yes/no): "
-	)
-	total += score_yes_no(ans3)
-
-	# Fourth academic question
-	ans4 = ask_number(
-		"4. How many times have you walked into the wrong classroom "
-		"since school started? "
-	)
-	total += score_frequency(ans4, 3)
-
-	return total
-
-
-def show_social_analysis(score):
-	"""Display the social-life analysis."""
-	print("\n---- SOCIAL LIFE ANALYSIS ----")
-
-	if score <= 20:
-		print("You have a pretty spontaneous social life.")
-	elif score <= 40:
-		print("Your social life is quite active.")
-	else:
-		print("My friend, your social life is chaos. Take a breath.")
-
-	print(f"Your social chaos score: {score}/60")
-
-
-def show_academic_analysis(score):
-	"""Display the academic-life analysis."""
-	print("\n---- ACADEMIC LIFE ANALYSIS ----")
-
-	if score <= 10:
-		print(
-			"Your academic life is virtually trouble-free; "
-			"everyone wants to be you."
-		)
-	elif score <= 20:
-		print(
-			"You need to be a little more careful. You are close to a "
-			"chaos-free life, but you aren't quite there yet."
-		)
-	else:
-		print(
-			"You need to pay some attention to your academic life while "
-			"there is still time; otherwise, things could turn out badly."
-		)
-
-	print(f"Your academic chaos score: {score}/40")
-
-
-def show_total_analysis(social_score, academic_score):
-	"""Calculate and display the overall chaos percentage."""
-	total_points = social_score + academic_score
-	total_possible_points = 100
-	percentage = total_points / total_possible_points * 100
-
-	print("\n---- TOTAL CHAOS PERCENTAGE ----")
-	print(f"Social points: {social_score}/60")
-	print(f"Academic points: {academic_score}/40")
-	print(f"Total chaos points: {total_points}/100")
-	print(f"Your total chaos percentage is: {percentage:.0f}%")
-
-	if percentage <= 30:
-		print(
-			"Low chaos level. My grandmother's life is more chaotic than yours."
-		)
-	elif percentage <= 60:
-		print(
-			"Average chaos level. I hope you're having fun and that your "
-			"life isn't overly chaotic or boring."
-		)
-	else:
-		print(
-			"High chaos level. Buddy, follow the rules. "
-			"You can't enjoy life like this."
-		)
-
-
-def main():
-	"""Run the Chaos Calculator."""
-	print("Welcome! It's your Chaos Calculator.")
-	print(
-		"I will help you calculate the chaos in your social and academic "
-		"life and classify it into different levels."
-	)
-
-	name = input(
-		"How should I address you? Please enter your name or nickname: "
-	).strip()
-
-	if not name:
-		name = "friend"
-
-	print(f"Nice to meet you, {name}! Let's get started.")
-	print("-" * 75)
-
-	total_social_points = ask_social_questions()
-	total_academic_points = ask_academic_questions()
-
-	show_social_analysis(total_social_points)
-	show_academic_analysis(total_academic_points)
-	show_total_analysis(total_social_points, total_academic_points)
-
-
-if __name__ == "__main__":
-	main()
+    if choice == "1":
+        add_item()
+    elif choice == "2":
+        sell_items()
+    elif choice == "3":
+        show_reports()
+    elif choice == "4":
+        if not products:
+            print("No items registered yet.")
+        else:
+            print("\n---- REGISTERED  ITEMS ----")
+            for name, product in products.items():
+                print(
+                    f"{name} | Stock: {product['stock']} units |  "
+                    f"Selling price: {product['selling_price']:.2f} TL"
+                )
+    elif choice == "5":
+        restock_item()
+    elif choice == "0":
+        print(" Thank you for using Stokito !!")
+        break
+    else:
+        print("Invalid choice!!!! Please select an option from 0 to 5.")
