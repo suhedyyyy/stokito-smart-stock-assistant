@@ -5,7 +5,7 @@
 - **GitHub username:@suhedyyyy
 
 ## Work completed
-Code control , preparing a powerpoint presentation
+Code control , preparing a powerpoint presentation ,GitHub file organization.
 
 ## Files or functions contributed to
 - `main.py`:
